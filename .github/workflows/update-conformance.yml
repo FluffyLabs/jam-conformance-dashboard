@@ -28,7 +28,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add README.md merged_summary.txt
+          git add README.md merged_summary.md
           # Only commit if there are changes
           if [[ -n $(git status -s) ]]; then
             git commit -m "chore: update conformance summary table [skip ci]"

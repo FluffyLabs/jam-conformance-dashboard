@@ -5,7 +5,7 @@ import { $ } from "bun";
 const REPO_URL = "https://github.com/w3f/jam-conformance";
 const WORK_DIR = join(process.cwd(), "repo");
 const REPORT_REL_PATH = "fuzz-reports/0.7.2/summaries";
-const OUTPUT_FILE = join(process.cwd(), "merged_summary.txt");
+const OUTPUT_FILE = join(process.cwd(), "merged_summary.md");
 const README_FILE = join(process.cwd(), "README.md");
 
 type Status = "🔴" | "🟢";
@@ -123,11 +123,29 @@ async function main() {
   console.log(`Traces with failures: ${interestingTraces.length}`);
   console.log(`Traces without failures: ${boringTraces.length}`);
 
-  let mdTable = `| Team | ${interestingTraces.join(" | ")} | Other Passed (🟢) | Other Unknown (⚪) |\n`;
-  mdTable += `|---|${interestingTraces.map(() => "---").join("|")}|---|---|\n`;
+  let mdTable = `| Team | 🔴 | 🟢 | ⚪ | ${interestingTraces.join(" | ")} |\n`;
+  mdTable += `|---|---|---|---|${interestingTraces.map(() => "---").join("|")}|\n`;
 
   for (const team of sortedTeams) {
     let row = `| ${team} |`;
+
+    // Calculate summary stats across ALL traces
+    let redCount = 0;
+    let greenCount = 0;
+    let unknownCount = 0;
+
+    for (const trace of allTraces) {
+      const status = results.get(trace)?.get(team);
+      if (status === "🔴") {
+        redCount++;
+      } else if (status === "🟢") {
+        greenCount++;
+      } else {
+        unknownCount++;
+      }
+    }
+
+    row += ` ${redCount} | ${greenCount} | ${unknownCount} |`;
 
     // Columns for interesting traces
     for (const trace of interestingTraces) {
@@ -135,21 +153,6 @@ async function main() {
       row += ` ${status} |`;
     }
 
-    // Summary columns for boring traces
-    let passedCount = 0;
-    let unknownCount = 0;
-
-    for (const trace of boringTraces) {
-      const status = results.get(trace)?.get(team);
-      if (status === "🟢") {
-        passedCount++;
-      } else {
-        // If status is undefined (or explicit unknown if we tracked it), it's unknown
-        unknownCount++;
-      }
-    }
-
-    row += ` ${passedCount} | ${unknownCount} |`;
     mdTable += `${row}\n`;
   }
 
