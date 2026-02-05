@@ -42,7 +42,8 @@ async function main() {
 
   console.log(`Found ${branches.length} branches.`);
 
-  let mergedContent = "";
+  let mergedContent =
+    "# Merged Summary\n\nGenerated from `jam-conformance` repository.\n";
 
   for (const branch of branches) {
     console.log(`Processing branch: ${branch}`);
@@ -56,25 +57,26 @@ async function main() {
         );
 
         if (files.length > 0) {
-          mergedContent += `\n\n================================================================================\n`;
-          mergedContent += `BRANCH: ${branch}\n`;
-          mergedContent += `================================================================================\n`;
+          mergedContent += `\n## Branch: ${branch}\n`;
 
           for (const file of files) {
             const teamName = file.replace("summary_", "").replace(".txt", "");
             allTeams.add(teamName);
 
+            mergedContent += `\n### ${teamName}\n\n`;
+
             // console.log(`    Reading ${file}`);
             const content = readFileSync(join(summariesDir, file), "utf-8");
-            mergedContent += `\n--- FILE: ${file} ---\n`;
-            mergedContent += content;
 
             // Parse content for table
             const lines = content.split("\n");
+            const validLines: string[] = [];
+
             for (const line of lines) {
               // Match red or green circle
               const match = line.match(/([\u{1F534}\u{1F7E2}])\s+(\d+)/u);
               if (match) {
+                validLines.push(line.trim());
                 const [_, status, traceId] = match;
 
                 if (!results.has(traceId)) {
@@ -91,6 +93,12 @@ async function main() {
                   }
                 }
               }
+            }
+
+            if (validLines.length > 0) {
+              mergedContent += `${validLines.map((l) => `- ${l}`).join("\n")}\n`;
+            } else {
+              mergedContent += "_No results found in this summary file._\n";
             }
           }
         }
