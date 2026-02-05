@@ -74,7 +74,7 @@ async function main() {
 
             for (const line of lines) {
               // Match red or green circle
-              const match = line.match(/([\u{1F534}\u{1F7E2}])\s+(\d+)/u);
+              const match = line.match(/([\u{1F534}\u{1F7E2}])\s+([0-9_]+)/u);
               if (match) {
                 validLines.push(line.trim());
                 const [_, status, traceId] = match;
