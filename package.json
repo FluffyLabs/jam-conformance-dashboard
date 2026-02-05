@@ -1,0 +1,10 @@
+{
+  "name": "jam-conformance-summary-aggregator",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@biomejs/biome": "2.3.14",
+    "@types/bun": "latest"
+  }
+}

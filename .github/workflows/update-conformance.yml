@@ -1,0 +1,35 @@
+name: Update Conformance Summary
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+          
+      - name: Run Aggregator
+        run: ./run.sh
+        
+      - name: Commit and Push
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add README.md merged_summary.txt
+          # Only commit if there are changes
+          if [[ -n $(git status -s) ]]; then
+            git commit -m "chore: update conformance summary table [skip ci]"
+            git push
+          else
+            console.log("No changes to commit")
+          fi
