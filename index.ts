@@ -129,6 +129,12 @@ async function main() {
     }
   }
 
+  // Append links to the end of merged summary
+  mergedContent += "\n\n";
+  for (const [traceId, branch] of traceBranchMap.entries()) {
+    mergedContent += `[${traceId}]: ${REPO_URL}/tree/${branch}/${TRACES_REL_PATH}/${traceId}\n`;
+  }
+
   console.log(`Writing merged summary to ${OUTPUT_FILE}`);
   writeFileSync(OUTPUT_FILE, mergedContent);
 
