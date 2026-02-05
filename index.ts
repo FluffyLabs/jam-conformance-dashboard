@@ -5,12 +5,15 @@ import { $ } from "bun";
 const REPO_URL = "https://github.com/w3f/jam-conformance";
 const WORK_DIR = join(process.cwd(), "repo");
 const REPORT_REL_PATH = "fuzz-reports/0.7.2/summaries";
+const TRACES_REL_PATH = "fuzz-reports/0.7.2/traces";
 const OUTPUT_FILE = join(process.cwd(), "merged_summary.md");
 const README_FILE = join(process.cwd(), "README.md");
 
 type Status = "🔴" | "🟢";
 // TraceID -> (Team -> Status)
 const results = new Map<string, Map<string, Status>>();
+// TraceID -> BranchName (where the trace directory was found)
+const traceBranchMap = new Map<string, string>();
 const allTeams = new Set<string>();
 
 async function main() {
@@ -79,6 +82,14 @@ async function main() {
                 }
                 // Last write wins (from latest branch processed)
                 results.get(traceId)?.set(teamName, status as Status);
+
+                // Check if trace directory exists on this branch to link it
+                if (!traceBranchMap.has(traceId)) {
+                  const traceDir = join(WORK_DIR, TRACES_REL_PATH, traceId);
+                  if (existsSync(traceDir)) {
+                    traceBranchMap.set(traceId, branch);
+                  }
+                }
               }
             }
           }
@@ -123,7 +134,15 @@ async function main() {
   console.log(`Traces with failures: ${interestingTraces.length}`);
   console.log(`Traces without failures: ${boringTraces.length}`);
 
-  let mdTable = `| Team | 🔴 | 🟢 | ⚪ | ${interestingTraces.join(" | ")} |\n`;
+  const linkify = (traceId: string) => {
+    const branch = traceBranchMap.get(traceId);
+    if (branch) {
+      return `[${traceId}](${REPO_URL}/tree/${branch}/${TRACES_REL_PATH}/${traceId})`;
+    }
+    return traceId;
+  };
+
+  let mdTable = `| Team | 🔴 | 🟢 | ⚪ | ${interestingTraces.map(linkify).join(" | ")} |\n`;
   mdTable += `|---|---|---|---|${interestingTraces.map(() => "---").join("|")}|\n`;
 
   for (const team of sortedTeams) {
