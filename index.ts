@@ -42,8 +42,8 @@ async function main() {
 
   console.log(`Found ${branches.length} branches.`);
 
-  let mergedContent =
-    "# Merged Summary\n\nGenerated from `jam-conformance` repository.\n";
+  const toc: string[] = [];
+  let bodyContent = "";
 
   for (const branch of branches) {
     console.log(`Processing branch: ${branch}`);
@@ -57,13 +57,22 @@ async function main() {
         );
 
         if (files.length > 0) {
-          mergedContent += `\n## Branch: ${branch}\n`;
+          toc.push(
+            `- [${branch}](#branch-${branch.toLowerCase().replace(/[^a-z0-9]/g, "-")})`,
+          );
+          bodyContent += `\n## Branch: ${branch}\n`;
 
           for (const file of files) {
             const teamName = file.replace("summary_", "").replace(".txt", "");
             allTeams.add(teamName);
 
-            mergedContent += `\n### ${teamName}\n\n`;
+            toc.push(
+              `  - [${teamName}](#${teamName.toLowerCase().replace(/[^a-z0-9]/g, "-")})`,
+            );
+            bodyContent += `\n### ${teamName}\n\n`;
+
+            // Add Generic Link to Traces for this branch
+            bodyContent += `[📂 View Traces for this Branch](${REPO_URL}/tree/${branch}/${TRACES_REL_PATH})\n\n`;
 
             // console.log(`    Reading ${file}`);
             const content = readFileSync(join(summariesDir, file), "utf-8");
@@ -76,8 +85,8 @@ async function main() {
               // Match red or green circle
               const match = line.match(/([\u{1F534}\u{1F7E2}])\s+([0-9_]+)/u);
               if (match) {
-                validLines.push(line.trim());
-                const [_, status, traceId] = match;
+                const [_full, status, traceId] = match;
+                validLines.push(`${status} ${traceId}`); // Just text, no links
 
                 if (!results.has(traceId)) {
                   results.set(traceId, new Map());
@@ -85,7 +94,7 @@ async function main() {
                 // Last write wins (from latest branch processed)
                 results.get(traceId)?.set(teamName, status as Status);
 
-                // Check if trace directory exists on this branch to link it
+                // Check if trace directory exists on this branch to link it (for the table)
                 if (!traceBranchMap.has(traceId)) {
                   const traceDir = join(WORK_DIR, TRACES_REL_PATH, traceId);
                   if (existsSync(traceDir)) {
@@ -96,22 +105,9 @@ async function main() {
             }
 
             if (validLines.length > 0) {
-              mergedContent += `${validLines
-                .map((l) => {
-                  const match = l.match(/([\u{1F534}\u{1F7E2}])\s+([0-9_]+)/u);
-                  if (match) {
-                    const [_full, status, traceId] = match;
-
-                    const traceDir = join(WORK_DIR, TRACES_REL_PATH, traceId);
-                    if (existsSync(traceDir)) {
-                      return `- ${status} [${traceId}]`;
-                    }
-                  }
-                  return `- ${l}`;
-                })
-                .join("\n")}\n`;
+              bodyContent += `${validLines.map((l) => `- ${l}`).join("\n")}\n`;
             } else {
-              mergedContent += "_No results found in this summary file._\n";
+              bodyContent += "_No results found in this summary file._\n";
             }
           }
         }
@@ -121,11 +117,13 @@ async function main() {
     }
   }
 
-  // Append links to the end of merged summary
-  mergedContent += "\n\n";
-  for (const [traceId, branch] of traceBranchMap.entries()) {
-    mergedContent += `[${traceId}]: ${REPO_URL}/tree/${branch}/${TRACES_REL_PATH}/${traceId}\n`;
-  }
+  // Construct Final Merged Content
+  let mergedContent =
+    "# Merged Summary\n\nGenerated from `jam-conformance` repository.\n\n## Table of Contents\n\n";
+  mergedContent += `${toc.join("\n")}\n`;
+  mergedContent += bodyContent;
+
+  // No footer links needed anymore since we removed per-trace links
 
   console.log(`Writing merged summary to ${OUTPUT_FILE}`);
   writeFileSync(OUTPUT_FILE, mergedContent);
