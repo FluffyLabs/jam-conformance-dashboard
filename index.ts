@@ -101,18 +101,10 @@ async function main() {
                   const match = l.match(/([\u{1F534}\u{1F7E2}])\s+([0-9_]+)/u);
                   if (match) {
                     const [_full, status, traceId] = match;
-                    // We can't use linkify here because traceBranchMap might not be fully populated yet
-                    // But since we are iterating branches, we know the current branch.
-                    // However, the trace might not exist on THIS branch but on another one processed later/earlier.
-                    // Actually, for merged summary, linking to the trace on the CURRENT branch (if exists)
-                    // or just text is fine. But we want it consistent with the table if possible.
-                    //
-                    // Let's do a second pass for mergedContent generation OR just use simple heuristic:
-                    // If we found it on this branch, link it.
 
                     const traceDir = join(WORK_DIR, TRACES_REL_PATH, traceId);
                     if (existsSync(traceDir)) {
-                      return `- ${status} [${traceId}](${REPO_URL}/tree/${branch}/${TRACES_REL_PATH}/${traceId})`;
+                      return `- ${status} [${traceId}]`;
                     }
                   }
                   return `- ${l}`;
