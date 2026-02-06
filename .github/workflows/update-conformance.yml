@@ -34,5 +34,5 @@ jobs:
             git commit -m "chore: update conformance summary table [skip ci]"
             git push
           else
-            console.log("No changes to commit")
+            echo "No changes to commit" 
           fi
