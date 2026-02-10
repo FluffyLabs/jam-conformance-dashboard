@@ -130,7 +130,11 @@ async function main() {
 
   console.log("Generating Markdown table...");
   const allTraces = Array.from(results.keys()).sort();
-  const sortedTeams = Array.from(allTeams).sort();
+  const sortedTeams = Array.from(allTeams).sort((a, b) => {
+    if (a === "typeberry") return -1;
+    if (b === "typeberry") return 1;
+    return a.localeCompare(b);
+  });
 
   // 1. Identify "Interesting" traces (at least one failure)
   const interestingTraces: string[] = [];
