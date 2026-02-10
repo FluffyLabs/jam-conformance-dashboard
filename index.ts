@@ -130,7 +130,11 @@ async function main() {
 
   console.log("Generating Markdown table...");
   const allTraces = Array.from(results.keys()).sort();
-  const sortedTeams = Array.from(allTeams).sort();
+  const sortedTeams = Array.from(allTeams).sort((a, b) => {
+    if (a === "typeberry") return -1;
+    if (b === "typeberry") return 1;
+    return a.localeCompare(b);
+  });
 
   // 1. Identify "Interesting" traces (at least one failure)
   const interestingTraces: string[] = [];
@@ -167,36 +171,50 @@ async function main() {
     return traceId;
   };
 
-  let mdTable = `| Team | 🔴 | 🟢 | ⚪ | ${interestingTraces.map(linkify).join(" | ")} |\n`;
-  mdTable += `|---|---|---|---|${interestingTraces.map(() => "---").join("|")}|\n`;
+  // Transposed Table Generation
+  // Header: Trace | Team1 | Team2 | ...
+  let mdTable = `| Trace | ${sortedTeams.join(" | ")} |\n`;
+  mdTable += `|---|${sortedTeams.map(() => "---").join("|")}|\n`;
 
+  // Pre-calculate stats per team
+  const teamStats = new Map<
+    string,
+    { red: number; green: number; unknown: number }
+  >();
   for (const team of sortedTeams) {
-    let row = `| ${team} |`;
-
-    // Calculate summary stats across ALL traces
-    let redCount = 0;
-    let greenCount = 0;
-    let unknownCount = 0;
-
+    let red = 0;
+    let green = 0;
+    let unknown = 0;
     for (const trace of allTraces) {
       const status = results.get(trace)?.get(team);
-      if (status === "🔴") {
-        redCount++;
-      } else if (status === "🟢") {
-        greenCount++;
-      } else {
-        unknownCount++;
-      }
+      if (status === "🔴") red++;
+      else if (status === "🟢") green++;
+      else unknown++;
     }
+    teamStats.set(team, { red, green, unknown });
+  }
 
-    row += ` ${redCount} | ${greenCount} | ${unknownCount} |`;
+  // Summary Rows
+  let redRow = `| 🔴 |`;
+  let greenRow = `| 🟢 |`;
+  let unknownRow = `| ⚪ |`;
 
-    // Columns for interesting traces
-    for (const trace of interestingTraces) {
+  for (const team of sortedTeams) {
+    const stats = teamStats.get(team)!;
+    redRow += ` ${stats.red} |`;
+    greenRow += ` ${stats.green} |`;
+    unknownRow += ` ${stats.unknown} |`;
+  }
+
+  mdTable += `${redRow}\n${greenRow}\n${unknownRow}\n`;
+
+  // Data Rows (Traces)
+  for (const trace of interestingTraces) {
+    let row = `| ${linkify(trace)} |`;
+    for (const team of sortedTeams) {
       const status = results.get(trace)?.get(team) || "⚪";
       row += ` ${status} |`;
     }
-
     mdTable += `${row}\n`;
   }
 
