@@ -38,7 +38,8 @@ async function main() {
     .split("\n")
     .map((b) => b.trim())
     .filter((b) => b && !b.includes("->") && b.startsWith("origin/"))
-    .map((b) => b.replace("origin/", ""));
+    .map((b) => b.replace("origin/", ""))
+    .sort();
 
   console.log(`Found ${branches.length} branches.`);
 
@@ -52,9 +53,9 @@ async function main() {
 
       const summariesDir = join(WORK_DIR, REPORT_REL_PATH);
       if (existsSync(summariesDir)) {
-        const files = readdirSync(summariesDir).filter(
-          (f) => f.startsWith("summary_") && f.endsWith(".txt"),
-        );
+        const files = readdirSync(summariesDir)
+          .filter((f) => f.startsWith("summary_") && f.endsWith(".txt"))
+          .sort();
 
         if (files.length > 0) {
           toc.push(
